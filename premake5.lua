@@ -1,5 +1,5 @@
 -- Helper functions to find compute API headers and libraries
-function findLibrariesNvidia()
+function linkCuda()
     local path = os.getenv("CUDA_PATH")
     
     if not path then
@@ -14,26 +14,61 @@ function findLibrariesNvidia()
         libdirs {"$(CUDA_PATH)/lib/x64"}
     end
     
-    links {"cuda", "nvrtc"}
+    links {"cuda"}
     return true
 end
 
-function linkLibraries()
-    local librariesFound = findLibrariesNvidia()
+function linkRttr()
+    includedirs {"Libraries/rttr-0.9.6/include"}
     
-    if not librariesFound then
-        error("Compute API libraries were not found. Please ensure that path to the SDK is correctly set in the environment variables:\nCUDA_PATH for Nvidia")
+    if os.target() == "linux" then
+        libdirs {"Libraries/rttr-0.9.6/lib/linux"}
+    else
+        libdirs {"Libraries/rttr-0.9.6/lib/windows"}
     end
     
+    filter "configurations:Debug"
+        links {"rttr_core_d"}
+    
+    filter "configurations:Release"
+        links {"rttr_core"}
+    
+    filter {}
+end
+
+function linkKtt()
     includedirs {"Libraries/KTT-2.0.1/Include"}
     
     if os.target() == "linux" then
-        libdirs {"Libraries/KTT-2.0.1/Lib/Linux"}
+        filter "configurations:Debug"
+            libdirs {"Libraries/KTT-2.0.1/Lib/Linux/Debug"}
+    
+        filter "configurations:Release"
+            libdirs {"Libraries/KTT-2.0.1/Lib/Linux/Release"}
+            
+        filter {}
     else
-        libdirs {"Libraries/KTT-2.0.1/Lib/Windows"}
+        filter "configurations:Debug"
+            libdirs {"Libraries/KTT-2.0.1/Lib/Windows/Debug"}
+    
+        filter "configurations:Release"
+            libdirs {"Libraries/KTT-2.0.1/Lib/Windows/Release"}
+            
+        filter {}
     end
     
     links {"ktt"}
+end
+
+function linkLibraries()
+    local cudaFound = linkCuda()
+    
+    if not cudaFound then
+        error("CUDA libraries were not found. Please ensure that CUDA_PATH is correctly set in the environment variables")
+    end
+    
+    linkKtt()
+    linkRttr()
 end
 
 -- Project configuration
@@ -68,9 +103,9 @@ workspace "Ktt-Lightning"
 -- Library configuration
 project "Ktt-Lightning"
     kind "SharedLib"
-    files {"Source/**", "Libraries/KTT-2.0.1/**"}
+    files {"Source/**", "Libraries/KTT-2.0.1/**", "Libraries/rttr-0.9.6/**"}
     includedirs {"Source"}
-    defines {"KTTL_LIBRARY"}
+    defines {"KTTL_LIBRARY", "KTTL_SOURCE=\"%{_WORKING_DIR}/Source/\""}
     targetname("ktt-lightning")
     linkLibraries()
 
@@ -80,4 +115,4 @@ project "Playground"
     files {"Examples/Playground/Playground.cpp"}
     includedirs {"Source"}
     links {"ktt-lightning"}
-    
+    linkRttr()

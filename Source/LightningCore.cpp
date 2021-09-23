@@ -1,4 +1,6 @@
+#include <AlgorithmLoader.h>
 #include <LightningCore.h>
+#include <TunerStorage.h>
 
 namespace kttl
 {
@@ -13,6 +15,12 @@ LightningCore::~LightningCore() = default;
 void LightningCore::Initialize()
 {
     m_Loader->Load();
+}
+
+rttr::variant LightningCore::Reduce(void* buffer, const size_t elementCount, const rttr::variant& init, const Operator& op)
+{
+    auto& reduction = m_Loader->GetReduction();
+    return reduction.Run(reinterpret_cast<CUdeviceptr>(buffer), elementCount, init, op);
 }
 
 } // namespace kttl

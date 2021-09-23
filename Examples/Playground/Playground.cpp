@@ -30,6 +30,7 @@ int main(int argc, char** argv)
 
     kttl::Initialize(deviceIndex);
 
+    const float result = kttl::Reduce(input.begin(), input.end(), 0.0f, kttl::Plus<float>());
     kttl::Terminate();
     return 0;
 }

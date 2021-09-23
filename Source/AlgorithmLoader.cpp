@@ -1,5 +1,4 @@
 #include <AlgorithmLoader.h>
-#include <Utility/FileSystem.h>
 
 namespace kttl
 {
@@ -8,9 +7,16 @@ AlgorithmLoader::AlgorithmLoader(ktt::Tuner& tuner) :
     m_Tuner(tuner)
 {}
 
+AlgorithmLoader::~AlgorithmLoader() = default;
+
 void AlgorithmLoader::Load()
 {
-    const std::string reductionCode = LoadFileToString("../Source/Kernels/Reduction.cu");
+    m_Reduction = std::make_unique<Reduction>(m_Tuner);
+}
+
+Reduction& AlgorithmLoader::GetReduction()
+{
+    return *m_Reduction;
 }
 
 } // namespace kttl

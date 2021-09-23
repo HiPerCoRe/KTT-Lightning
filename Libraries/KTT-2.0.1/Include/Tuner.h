@@ -90,6 +90,16 @@ public:
       */
     explicit Tuner(const ComputeApi api, const ComputeApiInitializer& initializer);
 
+    /** @fn explicit Tuner(const ComputeApi api, const ComputeApiInitializer& initializer, std::vector<QueueId>& assignedQueueIds)
+      * Creates tuner for the specified compute API using custom initializer. The initializer contains user-provided compute device
+      * context and queues. The ids assigned to queues will be added to the provided vector.
+      * @param api Compute API used by the tuner.
+      * @param initializer Custom compute API initializer. See ComputeApiInitializer for more information.
+      * @param assignedQueueIds Ids assigned to compute queues inside initializer by the tuner. The order of assigned ids matches
+      * the order of queues inside initializer.
+      */
+    explicit Tuner(const ComputeApi api, const ComputeApiInitializer& initializer, std::vector<QueueId>& assignedQueueIds);
+
     /** @fn ~Tuner()
       * Tuner destructor.
       */
@@ -566,6 +576,20 @@ public:
       */
     std::vector<KernelResult> LoadResults(const std::string& filePath, const OutputFormat format, UserData& data) const;
 
+    /** @fn QueueId AddComputeQueue(ComputeQueue queue)
+      * Adds the specified compute queue to the tuner. New queues can only be added if tuner was initialized with compute API
+      * initializer.
+      * @param queue Queue which will be added. The queue should be tied to the context specified inside compute API initializer.
+      * @return Id assigned to queue by the tuner.
+      */
+    QueueId AddComputeQueue(ComputeQueue queue);
+
+    /** @fn void RemoveComputeQueue(const QueueId id)
+      * Removes the specified compute queue from the tuner. Only queues added by user can be removed.
+      * @param id Id of compute queue which will be removed.
+      */
+    void RemoveComputeQueue(const QueueId id);
+
     /** @fn void Synchronize()
       * Blocks until all commands submitted to all KTT device queues are completed.
       */
@@ -656,13 +680,13 @@ public:
 private:
     std::unique_ptr<TunerCore> m_Tuner;
 
-    ArgumentId AddArgumentWithReferencedData(const size_t elementSize, const ArgumentDataType dataType,
+    KTT_VIRTUAL_API ArgumentId AddArgumentWithReferencedData(const size_t elementSize, const ArgumentDataType dataType,
         const ArgumentMemoryLocation memoryLocation, const ArgumentAccessType accessType, const ArgumentMemoryType memoryType,
         const ArgumentManagementType managementType, void* data, const size_t dataSize);
-    ArgumentId AddArgumentWithOwnedData(const size_t elementSize, const ArgumentDataType dataType,
+    KTT_VIRTUAL_API ArgumentId AddArgumentWithOwnedData(const size_t elementSize, const ArgumentDataType dataType,
         const ArgumentMemoryLocation memoryLocation, const ArgumentAccessType accessType, const ArgumentMemoryType memoryType,
         const ArgumentManagementType managementType, const void* data, const size_t dataSize, const std::string& symbolName = "");
-    ArgumentId AddUserArgument(ComputeBuffer buffer, const size_t elementSize, const ArgumentDataType dataType,
+    KTT_VIRTUAL_API ArgumentId AddUserArgument(ComputeBuffer buffer, const size_t elementSize, const ArgumentDataType dataType,
         const ArgumentMemoryLocation memoryLocation, const ArgumentAccessType accessType, const size_t dataSize);
 
     template <typename T>

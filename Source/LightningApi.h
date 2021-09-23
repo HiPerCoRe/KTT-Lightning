@@ -7,6 +7,7 @@
 #include <memory>
 
 #include <KttlPlatform.h>
+#include <Operators/Operators.h>
 
 /** @namespace kttl
   * All classes, methods and type aliases related to KTT Lightning are located inside kttl namespace.
