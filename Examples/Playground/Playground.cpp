@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cuda.h>
 
 #include <KttLightning.h>
 
@@ -19,18 +20,23 @@ int main(int argc, char** argv)
         deviceIndex = std::stoul(std::string(argv[1]));
     }
 
-    const size_t numberOfElements = 1024 * 1024;
-    std::vector<float> input(numberOfElements);
-
     // Initialize data
+    const size_t numberOfElements = 1024 * 1024;    
+    std::vector<float> inputHost(numberOfElements);
+    
     for (size_t i = 0; i < numberOfElements; ++i)
     {
-        input[i] = static_cast<float>(i);
+        inputHost[i] = static_cast<float>(i);
     }
 
-    kttl::Initialize(deviceIndex);
+    CUdeviceptr input;
+    cuMemAlloc(&input, numberOfElements * sizeof(float));
+    cuMemcpyHtoD(input, inputHost.data(), numberOfElements * sizeof(float));
 
-    const float result = kttl::Reduce(input.begin(), input.end(), 0.0f, kttl::Plus<float>());
+    kttl::Initialize(deviceIndex);
+    const float result = kttl::Reduce(input, numberOfElements, 0.0f, kttl::Plus<float>());
     kttl::Terminate();
+
+    cuMemFree(input);
     return 0;
 }

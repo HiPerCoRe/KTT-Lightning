@@ -115,4 +115,4 @@ project "Playground"
     files {"Examples/Playground/Playground.cpp"}
     includedirs {"Source"}
     links {"ktt-lightning"}
-    linkRttr()
+    linkCuda()

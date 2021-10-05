@@ -18,7 +18,7 @@ Reduction::Reduction(ktt::Tuner& tuner) :
     m_DefaultSource = LoadFileToString(KTTL_SOURCE + std::string("Kernels/Reduction.cu"));
 }
 
-void Reduction::Initialize(const rttr::type& elementType, const Operator& op)
+void Reduction::Initialize(const std::string& elementType, const Operator& op)
 {
     const auto pair = std::make_pair(elementType, op.GetName());
 
@@ -27,17 +27,16 @@ void Reduction::Initialize(const rttr::type& elementType, const Operator& op)
         return;
     }
 
-    const auto typeName = elementType.get_name().to_string();
     const auto operatorName = op.GetName();
     const auto operatorCode = op.GetCode();
     auto operatorTypeName = operatorName;
 
     if (op.IsTemplated())
     {
-        operatorTypeName += "< " + typeName + " >";
+        operatorTypeName += "< " + elementType + " >";
     }
 
-    m_TypeToKernel[pair].first = m_Tuner.AddKernelDefinition("reduce", operatorCode + m_DefaultSource, ktt::DimensionVector(), ktt::DimensionVector(), {typeName, operatorTypeName});
+    m_TypeToKernel[pair].first = m_Tuner.AddKernelDefinition("reduce", operatorCode + m_DefaultSource, ktt::DimensionVector(), ktt::DimensionVector(), {elementType, operatorTypeName});
     m_TypeToKernel[pair].second = m_Tuner.CreateSimpleKernel("Reduction", m_TypeToKernel[pair].first);
     const auto definitionId = m_TypeToKernel[pair].first;
     const auto kernelId = m_TypeToKernel[pair].second;
@@ -116,34 +115,36 @@ void Reduction::Initialize(const rttr::type& elementType, const Operator& op)
     });
 }
 
-rttr::variant Reduction::Run(CUdeviceptr srcBuffer, const size_t elementCount, const rttr::variant& init, const Operator& op)
+std::vector<uint8_t> Reduction::Run(CUdeviceptr srcBuffer, const size_t elementCount, const size_t elementSize, const std::string& typeName,
+    [[maybe_unused]] const void* init, const Operator& op)
 {
-    Initialize(init.get_type(), op);
-    const auto pair = std::make_pair(init.get_type(), op.GetName());
+    Initialize(typeName, op);
+    const auto pair = std::make_pair(typeName, op.GetName());
     ClearArguments(pair);
 
-    /*const size_t bufferSize = t.get_sizeof() * elementCount;
-    m_SrcId = m_Tuner.AddArgumentVector<T>(static_cast<ktt::ComputeBuffer>(srcBuffer), bufferSize, ktt::ArgumentAccessType::ReadWrite, ktt::ArgumentMemoryLocation::Device);
+    const size_t bufferSize = elementSize * elementCount;
+    m_SrcId = m_Tuner.AddArgumentVector(reinterpret_cast<ktt::ComputeBuffer>(srcBuffer), bufferSize, elementSize,
+        ktt::ArgumentAccessType::ReadWrite, ktt::ArgumentMemoryLocation::Device);
 
-    dst.resize(elementCount, static_cast<T>(0));
+    /*dst.resize(elementCount, static_cast<T>(0));
     m_DstId = m_Tuner.AddArgumentVector<T>(static_cast<ktt::ComputeBuffer>(m_DstBuffer), bufferSize, ktt::ArgumentAccessType::ReadWrite, ktt::ArgumentMemoryLocation::Device);
 
     m_NId = m_Tuner.AddArgumentScalar(elementCount);
     UpdateArguments(pair);*/
 
-    rttr::variant result;
-    ktt::BufferOutputDescriptor output(m_DstId, &result, init.get_type().get_sizeof());
+    std::vector<uint8_t> result;
+    ktt::BufferOutputDescriptor output(m_DstId, result.data(), elementSize);
     m_Tuner.TuneIteration(m_TypeToKernel[pair].second, {output});
     return result;
 }
 
-void Reduction::UpdateArguments(const std::pair<rttr::type, std::string>& typePair)
+void Reduction::UpdateArguments(const std::pair<std::string, std::string>& typePair)
 {
     const auto definition = m_TypeToKernel[typePair].first;
     m_Tuner.SetArguments(definition, {m_SrcId, m_DstId, m_NId, m_InOffsetId, m_OutOffsetId});
 }
 
-void Reduction::ClearArguments(const std::pair<rttr::type, std::string>& typePair)
+void Reduction::ClearArguments(const std::pair<std::string, std::string>& typePair)
 {
     const auto definition = m_TypeToKernel[typePair].first;
     m_Tuner.SetArguments(definition, {});

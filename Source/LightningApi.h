@@ -18,8 +18,8 @@ namespace kttl
 KTTL_API void Initialize(const uint32_t deviceIndex);
 KTTL_API void Terminate();
 
-template <typename InputIterator, typename T, typename BinaryOperator>
-T Reduce(InputIterator first, InputIterator last, T init, BinaryOperator binaryOperator);
+template <typename InputBuffer, typename T, typename BinaryOperator>
+T Reduce(InputBuffer buffer, const size_t elementCount, T init, BinaryOperator binaryOperator);
 
 class LightningCore;
 KTTL_API LightningCore& Core();

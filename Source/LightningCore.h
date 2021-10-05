@@ -2,7 +2,8 @@
 
 #include <cstdint>
 #include <memory>
-#include <rttr/registration>
+#include <string>
+#include <vector>
 
 #include <Operators/Operator.h>
 #include <KttlPlatform.h>
@@ -21,7 +22,8 @@ public:
 
     void Initialize();
 
-    rttr::variant Reduce(void* buffer, const size_t elementCount, const rttr::variant& init, const Operator& op);
+    std::vector<uint8_t> Reduce(void* buffer, const size_t elementCount, const size_t elementSize, const std::string& typeName,
+        const void* init, const Operator& op);
 
 private:
     std::unique_ptr<TunerStorage> m_Storage;

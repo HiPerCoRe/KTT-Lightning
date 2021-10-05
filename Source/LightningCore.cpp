@@ -17,10 +17,11 @@ void LightningCore::Initialize()
     m_Loader->Load();
 }
 
-rttr::variant LightningCore::Reduce(void* buffer, const size_t elementCount, const rttr::variant& init, const Operator& op)
+std::vector<uint8_t> LightningCore::Reduce(void* buffer, const size_t elementCount, const size_t elementSize, const std::string& typeName,
+    const void* init, const Operator& op)
 {
     auto& reduction = m_Loader->GetReduction();
-    return reduction.Run(reinterpret_cast<CUdeviceptr>(buffer), elementCount, init, op);
+    return reduction.Run(reinterpret_cast<CUdeviceptr>(buffer), elementCount, elementSize, typeName, init, op);
 }
 
 } // namespace kttl
