@@ -48,7 +48,7 @@ bool IsTemplated() const override \
 } \
 };
 
-KTTL_OPERATOR_TEMPLATED(Plus, T, constexpr T operator()(const T& lhs, const T& rhs)
+KTTL_OPERATOR_TEMPLATED(Plus, T, T operator()(const T& lhs, const T& rhs)
 {
     return lhs + rhs;
 })

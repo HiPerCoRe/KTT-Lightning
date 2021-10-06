@@ -13,30 +13,31 @@ Reduction::Reduction(ktt::Tuner& tuner) :
     m_InOffsetId(ktt::InvalidArgumentId),
     m_OutOffsetId(ktt::InvalidArgumentId),
     m_DstBuffer(0),
-    m_BufferSize(0)
+    m_DstBufferSize(0)
 {
     m_DefaultSource = LoadFileToString(KTTL_SOURCE + std::string("Kernels/Reduction.cu"));
 }
 
-void Reduction::Initialize(const std::string& elementType, const Operator& op)
+void Reduction::Initialize(const std::string& elementType, const Operator& op, const size_t elementCount)
 {
+    // Todo: handle cases with changing element count
     const auto pair = std::make_pair(elementType, op.GetName());
-
+    
     if (ContainsKey(m_TypeToKernel, pair))
     {
         return;
     }
 
-    const auto operatorName = op.GetName();
     const auto operatorCode = op.GetCode();
-    auto operatorTypeName = operatorName;
+    auto operatorTypeName = op.GetName();
 
     if (op.IsTemplated())
     {
         operatorTypeName += "< " + elementType + " >";
     }
 
-    m_TypeToKernel[pair].first = m_Tuner.AddKernelDefinition("reduce", operatorCode + m_DefaultSource, ktt::DimensionVector(), ktt::DimensionVector(), {elementType, operatorTypeName});
+    const size_t nUp = ((elementCount + 1024 - 1) / 1024) * 1024; // maximum WG size used in tuning parameters
+    m_TypeToKernel[pair].first = m_Tuner.AddKernelDefinition("reduce", operatorCode + m_DefaultSource, ktt::DimensionVector(nUp), ktt::DimensionVector(), {elementType, operatorTypeName});
     m_TypeToKernel[pair].second = m_Tuner.CreateSimpleKernel("Reduction", m_TypeToKernel[pair].first);
     const auto definitionId = m_TypeToKernel[pair].first;
     const auto kernelId = m_TypeToKernel[pair].second;
@@ -118,27 +119,38 @@ void Reduction::Initialize(const std::string& elementType, const Operator& op)
 std::vector<uint8_t> Reduction::Run(CUdeviceptr srcBuffer, const size_t elementCount, const size_t elementSize, const std::string& typeName,
     [[maybe_unused]] const void* init, const Operator& op)
 {
-    Initialize(typeName, op);
+    m_Tuner.SetGlobalSizeType(ktt::GlobalSizeType::OpenCL);
+    Initialize(typeName, op, elementCount);
     const auto pair = std::make_pair(typeName, op.GetName());
-    ClearArguments(pair);
-
     const size_t bufferSize = elementSize * elementCount;
+
+    if (m_DstBufferSize < bufferSize)
+    {
+        if (m_DstBuffer != 0)
+        {
+            cuMemFree(m_DstBuffer);
+        }
+
+        cuMemAlloc(&m_DstBuffer, bufferSize);
+        m_DstBufferSize = bufferSize;
+    }
+
     m_SrcId = m_Tuner.AddArgumentVector(reinterpret_cast<ktt::ComputeBuffer>(srcBuffer), bufferSize, elementSize,
         ktt::ArgumentAccessType::ReadWrite, ktt::ArgumentMemoryLocation::Device);
-
-    /*dst.resize(elementCount, static_cast<T>(0));
-    m_DstId = m_Tuner.AddArgumentVector<T>(static_cast<ktt::ComputeBuffer>(m_DstBuffer), bufferSize, ktt::ArgumentAccessType::ReadWrite, ktt::ArgumentMemoryLocation::Device);
-
+    m_DstId = m_Tuner.AddArgumentVector(reinterpret_cast<ktt::ComputeBuffer>(m_DstBuffer), bufferSize, elementSize,
+        ktt::ArgumentAccessType::ReadWrite, ktt::ArgumentMemoryLocation::Device);
     m_NId = m_Tuner.AddArgumentScalar(elementCount);
-    UpdateArguments(pair);*/
+    SetArguments(pair);
 
-    std::vector<uint8_t> result;
+    std::vector<uint8_t> result(elementSize, 0);
     ktt::BufferOutputDescriptor output(m_DstId, result.data(), elementSize);
     m_Tuner.TuneIteration(m_TypeToKernel[pair].second, {output});
+
+    ClearArguments(pair);
     return result;
 }
 
-void Reduction::UpdateArguments(const std::pair<std::string, std::string>& typePair)
+void Reduction::SetArguments(const std::pair<std::string, std::string>& typePair)
 {
     const auto definition = m_TypeToKernel[typePair].first;
     m_Tuner.SetArguments(definition, {m_SrcId, m_DstId, m_NId, m_InOffsetId, m_OutOffsetId});
@@ -148,6 +160,24 @@ void Reduction::ClearArguments(const std::pair<std::string, std::string>& typePa
 {
     const auto definition = m_TypeToKernel[typePair].first;
     m_Tuner.SetArguments(definition, {});
+
+    if (m_DstId != ktt::InvalidArgumentId)
+    {
+        m_Tuner.RemoveArgument(m_DstId);
+        m_DstId = ktt::InvalidArgumentId;
+    }
+
+    if (m_SrcId != ktt::InvalidArgumentId)
+    {
+        m_Tuner.RemoveArgument(m_SrcId);
+        m_SrcId = ktt::InvalidArgumentId;
+    }
+
+    if (m_NId != ktt::InvalidArgumentId)
+    {
+        m_Tuner.RemoveArgument(m_NId);
+        m_NId = ktt::InvalidArgumentId;
+    }
 }
 
 } // namespace kttl

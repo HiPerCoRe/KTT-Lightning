@@ -12,6 +12,12 @@ T Reduce(InputBuffer buffer, const size_t elementCount, T init, BinaryOperator b
     const size_t elementSize = sizeof(T);
     const auto& elementType = typeid(T);
     auto result = Core().Reduce(reinterpret_cast<void*>(buffer), elementCount, elementSize, elementType.name(), &init, binaryOperator);
+
+    if (result.empty())
+    {
+        return static_cast<T>(0);
+    }
+
     return *reinterpret_cast<T*>(result.data());
 }
 

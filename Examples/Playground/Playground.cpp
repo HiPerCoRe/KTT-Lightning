@@ -26,14 +26,15 @@ int main(int argc, char** argv)
     
     for (size_t i = 0; i < numberOfElements; ++i)
     {
-        inputHost[i] = static_cast<float>(i);
+        inputHost[i] = 1.0f; //static_cast<float>(i);
     }
+
+    kttl::Initialize(deviceIndex);
 
     CUdeviceptr input;
     cuMemAlloc(&input, numberOfElements * sizeof(float));
     cuMemcpyHtoD(input, inputHost.data(), numberOfElements * sizeof(float));
 
-    kttl::Initialize(deviceIndex);
     const float result = kttl::Reduce(input, numberOfElements, 0.0f, kttl::Plus<float>());
     kttl::Terminate();
 
