@@ -4,3 +4,4 @@
 #pragma once
 
 #include <LightningApi.h>
+#include <ThrustAdapters.h>

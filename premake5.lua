@@ -110,9 +110,16 @@ project "Ktt-Lightning"
     linkLibraries()
 
 -- Examples
-project "Playground"
+project "Reduction"
     kind "ConsoleApp"
-    files {"Examples/Playground/Playground.cpp"}
+    files {"Examples/Reduction/Reduction.cpp"}
+    includedirs {"Source"}
+    links {"ktt-lightning"}
+    linkCuda()
+
+project "Transform"
+    kind "ConsoleApp"
+    files {"Examples/Transform/Transform.cpp"}
     includedirs {"Source"}
     links {"ktt-lightning"}
     linkCuda()

@@ -24,6 +24,8 @@ public:
 
     std::vector<uint8_t> Reduce(void* buffer, const size_t elementCount, const size_t elementSize, const std::string& typeName,
         const void* init, const Operator& op);
+    std::vector<uint8_t> Transform(void* srcBuffer1, void* srcBuffer2, void* dstBuffer, const size_t elementCount,
+        const size_t elementSize, const std::string& typeName, const Operator& op);
 
 private:
     std::unique_ptr<TunerStorage> m_Storage;

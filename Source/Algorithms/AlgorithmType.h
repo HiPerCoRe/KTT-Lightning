@@ -5,7 +5,8 @@ namespace kttl
 
 enum class AlgorithmType
 {
-    Reduction
+    Reduction,
+    Transform
 };
 
 } // namespace kttl

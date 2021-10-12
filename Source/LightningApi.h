@@ -21,6 +21,9 @@ KTTL_API void Terminate();
 template <typename InputBuffer, typename T, typename BinaryOperator>
 T Reduce(InputBuffer buffer, const size_t elementCount, T init, BinaryOperator binaryOperator);
 
+template <typename T, typename InputBuffer1, typename InputBuffer2, typename OutputBuffer, typename BinaryOperator>
+OutputBuffer Transform(InputBuffer1 input1, InputBuffer2 input2, OutputBuffer output, const size_t elementCount, BinaryOperator binaryOperator);
+
 class LightningCore;
 KTTL_API LightningCore& Core();
 
