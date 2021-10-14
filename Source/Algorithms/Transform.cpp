@@ -45,6 +45,7 @@ void Transform::Initialize(const std::string& elementType, const Operator& op, c
     m_Tuner.AddThreadModifier(kernelId, {definitionId}, ktt::ModifierType::Global, ktt::ModifierDimension::X, "ELEMENTS_PER_THREAD", ktt::ModifierAction::Divide);
 
     m_Tuner.AddParameter(kernelId, "UNROLL_FACTOR", std::vector<uint64_t>{1, 2, 4, 8});
+    m_Tuner.AddParameter(kernelId, "MEMORY_MAPPING_PATTERN", std::vector<uint64_t>{0, 1});
 }
 
 std::vector<uint8_t> Transform::Run(CUdeviceptr srcBuffer1, CUdeviceptr srcBuffer2, CUdeviceptr dstBuffer, const size_t elementCount,
